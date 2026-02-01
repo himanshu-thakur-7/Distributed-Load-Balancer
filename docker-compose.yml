@@ -111,3 +111,12 @@ services:
     depends_on:
       redis-init:
         condition: service_completed_successfully
+
+  orchestrator:
+    build: ./orchestrator
+    depends_on:
+      - redis
+      - backend1
+      - backend2
+      - backend3
+      - backend4
