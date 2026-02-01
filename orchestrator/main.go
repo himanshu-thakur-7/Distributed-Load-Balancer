@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -56,6 +57,24 @@ func updateBackendStatus(rdb *redis.Client, backendId string, status string) {
 
 }
 
+func getBackendStatus(rdb *redis.Client, backendID string) (string, error) {
+	key := "backend:" + backendID
+	return rdb.HGet(ctx, key, "status").Result()
+}
+
+func publishBackendChange(rdb *redis.Client, backendID, status string) {
+	event := fmt.Sprintf(
+		`{"backend_id":"%s","status":"%s"}`,
+		backendID,
+		status,
+	)
+
+	err := rdb.Publish(ctx, "backend_changes", event).Err()
+	if err != nil {
+		log.Printf("[ORCH] failed to publish event : %v", err)
+	}
+}
+
 func runHealthCheckCycle(rdb *redis.Client) {
 	backendIDs, err := getBackendIDs(rdb)
 
@@ -66,6 +85,8 @@ func runHealthCheckCycle(rdb *redis.Client) {
 
 	for _, id := range backendIDs {
 		url, err := getBackendURL(rdb, id)
+		prevStatus, _ := getBackendStatus(rdb, id)
+
 		if err != nil {
 			log.Printf("[ORCH] failed to get url for %s", id)
 			continue
@@ -77,7 +98,13 @@ func runHealthCheckCycle(rdb *redis.Client) {
 			status = "healthy"
 		}
 
-		updateBackendStatus(rdb, id, status)
+		if prevStatus != status {
+			updateBackendStatus(rdb, id, status)
+			publishBackendChange(rdb, id, status)
+
+			log.Printf("[ORCH] backend=%s status changed %s -> %s", id, prevStatus, status)
+
+		}
 
 		log.Printf("[ORCH] backend=%s status=%s", id, status)
 	}
