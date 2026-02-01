@@ -132,7 +132,7 @@ Screenshot 2026-02-02 at 12.58.02 AM.png (system design diagram)
 
 The following diagram illustrates the architecture and interactions between components:
 
-![System Design Diagram](../Screenshot%202026-02-02%20at%2012.58.02%E2%80%AFAM.png)
+![System Design Diagram](Screenshot%202026-02-02%20at%2012.58.02%E2%80%AFAM.png)
 
 ---
 
