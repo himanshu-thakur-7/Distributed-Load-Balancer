@@ -37,3 +37,10 @@ services:
     environment:
       - NODE_ID=backend4
       - PORT=8080
+  
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+  
