@@ -1,5 +1,5 @@
 # ----------Builder Stage--------
-FROM golang:1.25.3-alpine AS builder
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/load-balancer .
 
-# Expose the port the sserver listens on
+# Expose the port the server listens on
 EXPOSE 8080
 
 # Run the binary

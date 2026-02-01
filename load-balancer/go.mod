@@ -1,6 +1,6 @@
 module load-balancer
 
-go 1.25.3
+go 1.22
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

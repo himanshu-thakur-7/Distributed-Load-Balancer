@@ -1,46 +1,113 @@
 version: '3.9'
 
 services:
-  load-balancer:
-    build: ./load-balancer
-    ports:
-      - "8080:8080"
-    depends_on:
-      - backend1
-      - backend2
-      - backend3
-      - backend4
   backend1:
+    build: ./node
     image: backend-node
     container_name: backend1
     environment:
       - NODE_ID=backend1
       - PORT=8080
-  
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
+
   backend2:
+    build: ./node
     image: backend-node
     container_name: backend2
     environment:
       - NODE_ID=backend2
       - PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
   
   backend3:
+    build: ./node
     image: backend-node
     container_name: backend3
     environment:
       - NODE_ID=backend3
       - PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
     
   backend4:
+    build: ./node
     image: backend-node
     container_name: backend4
     environment:
       - NODE_ID=backend4
       - PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
   
   redis:
     image: redis:7.2-alpine
     container_name: redis
     ports:
       - "6379:6379"
-  
+    depends_on:
+      backend1:
+        condition: service_started
+      backend2:
+        condition: service_started
+      backend3:
+        condition: service_started
+      backend4:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -h 127.0.0.1 ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  # One-shot init job to seed Redis after all deps are healthy
+  redis-init:
+    image: redis:7.2-alpine
+    depends_on:
+      backend1:
+        condition: service_healthy
+      backend2:
+        condition: service_healthy
+      backend3:
+        condition: service_healthy
+      backend4:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -lc '
+      set -e;
+      redis-cli -h redis SADD backends backend1 backend2 backend3 backend4;
+      redis-cli -h redis HSET backend:backend1 url http://backend1:8080 status healthy;
+      redis-cli -h redis HSET backend:backend2 url http://backend2:8080 status healthy;
+      redis-cli -h redis HSET backend:backend3 url http://backend3:8080 status healthy;
+      redis-cli -h redis HSET backend:backend4 url http://backend4:8080 status healthy;
+      echo "Seeded redis";
+      '
+    restart: "no"
+
+  load-balancer:
+    build: ./load-balancer
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis-init:
+        condition: service_completed_successfully

@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var isHealthy = true
+
 type Response struct {
 	NodeID           string `json:"node_id"`
 	ProcessingTimeMs int64  `json:"processing_time_ms"`
@@ -36,6 +38,23 @@ func processHandler(nodeID string, rng *rand.Rand) http.HandlerFunc {
 	}
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if isHealthy {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"healthy"}`))
+	} else {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(`{"status":"unhealthy"}`))
+	}
+}
+
+func toggleHealthHandler(w http.ResponseWriter, r *http.Request) {
+	isHealthy = !isHealthy
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte("health toggled"))
+}
+
 func main() {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -50,6 +69,8 @@ func main() {
 	}
 
 	http.HandleFunc("/process", processHandler(nodeID, rng))
+	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/toggle-health", toggleHealthHandler)
 
 	log.Printf("[%s] starting backend server on port %s\n", nodeID, port)
 
