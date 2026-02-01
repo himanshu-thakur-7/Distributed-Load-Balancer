@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  load-balancer:
+    build: ./load-balancer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+      - backend4
+  backend1:
+    image: backend-node
+    container_name: backend1
+    environment:
+      - NODE_ID=backend1
+      - PORT=8080
+  
+  backend2:
+    image: backend-node
+    container_name: backend2
+    environment:
+      - NODE_ID=backend2
+      - PORT=8080
+  
+  backend3:
+    image: backend-node
+    container_name: backend3
+    environment:
+      - NODE_ID=backend3
+      - PORT=8080
+    
+  backend4:
+    image: backend-node
+    container_name: backend4
+    environment:
+      - NODE_ID=backend4
+      - PORT=8080
